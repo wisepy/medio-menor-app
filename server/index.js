@@ -1,4 +1,7 @@
 import "dotenv/config";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import { uploadsDir } from "./uploads.js";
@@ -16,6 +19,9 @@ import { familiesRouter } from "./routes/families.js";
 import { childrenRouter } from "./routes/children.js";
 import { directivaRouter } from "./routes/directiva.js";
 import { notificationsRouter } from "./routes/notifications.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const clientDist = path.join(__dirname, "..", "dist");
 
 const app = express();
 
@@ -38,6 +44,14 @@ app.use("/api/directiva", directivaRouter);
 app.use("/api/notifications", notificationsRouter);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+
+  app.get(/^(?!\/api|\/uploads).*/, (req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 app.use((err, req, res, next) => {
   console.error(err);
