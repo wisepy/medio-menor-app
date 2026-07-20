@@ -1,41 +1,11 @@
 import "dotenv/config";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import mysql from "mysql2/promise";
 import bcrypt from "bcryptjs";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const baseConfig = {
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  multipleStatements: true,
-};
-
-async function ensureDatabase() {
-  const connection = await mysql.createConnection(baseConfig);
-  await connection.query(
-    `CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME}\`
-     CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-  );
-  await connection.end();
-}
-
-async function runSchema(connection) {
-  const schema = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
-  await connection.query(schema);
-}
+import { ensureDatabase, connectToDatabase, runSchema } from "./dbSetup.js";
 
 async function seed() {
   await ensureDatabase();
 
-  const connection = await mysql.createConnection({
-    ...baseConfig,
-    database: process.env.DB_NAME,
-  });
+  const connection = await connectToDatabase();
 
   await runSchema(connection);
 
@@ -52,7 +22,7 @@ async function seed() {
   const educadoraHash = await bcrypt.hash("educa1234", 10);
   const apoderadoHash = await bcrypt.hash("demo1234", 10);
 
-  const [educadora] = await connection.query(
+  await connection.query(
     "INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, 'educadora')",
     ["educadora@mylittleworld.cl", educadoraHash, "Tía Carolina"]
   );

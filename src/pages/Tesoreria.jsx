@@ -30,17 +30,19 @@ function Tesoreria() {
         ➕ Registrar ingreso o gasto
       </Link>
 
-      <section className="finance-fund">
-        <div className="fund-circle">
-          {treasury.fund.progress}%
-        </div>
+      {treasury.fund && (
+        <section className="finance-fund">
+          <div className="fund-circle">
+            {treasury.fund.progress}%
+          </div>
 
-        <div>
-          <p className="section-title">Fondo activo</p>
-          <h3>{treasury.fund.name}</h3>
-          <p>{treasury.fund.current} de {treasury.fund.goal}</p>
-        </div>
-      </section>
+          <div>
+            <p className="section-title">Fondo activo</p>
+            <h3>{treasury.fund.name}</h3>
+            <p>{treasury.fund.current} de {treasury.fund.goal}</p>
+          </div>
+        </section>
+      )}
 
       <section className="finance-movements">
         <p className="section-title">Últimos movimientos</p>

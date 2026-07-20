@@ -43,12 +43,24 @@ Sigue el orden: **base de datos → build del frontend → app Node.js**.
    cd server
    npm install
 
-   # opcional: datos de demo
-   node seed.js
+   # 3. crea las tablas + tu cuenta real de educadora (sin datos de demo)
+   EDUCADORA_NAME="Tu Nombre" EDUCADORA_EMAIL="tucorreo@tudominio.cl" EDUCADORA_PASSWORD="unaClaveSegura123" node bootstrap.js
    ```
+   `bootstrap.js` crea las tablas si no existen y **una sola** cuenta de educadora real con los
+   datos que le pases — no inserta familias, comunicados ni fotos de ejemplo. Si vuelves a
+   correrlo, detecta que ya existe una educadora y no hace nada (seguro re-ejecutarlo).
+
+   Si en cambio quieres partir viendo la app con datos de ejemplo (útil solo para probar), usa
+   `node seed.js` en vez del paso anterior — crea la educadora demo y 3 familias falsas.
 4. Inicia/reinicia la app Node.js desde hPanel (startup file `server/index.js`). Verifica:
    - `https://mediomenor.idweb.cl/api/health` → `{"ok":true}`
    - `https://mediomenor.idweb.cl/` → carga la app (React), no un JSON.
+5. Inicia sesión con la cuenta de educadora que acabas de crear. Desde **Más → Panel Educadora**:
+   - **Familias → Agregar familia**: crea una cuenta real por cada apoderado (nombre, correo,
+     contraseña inicial, nombre del niño/a). Cada apoderado inicia sesión con esos datos.
+   - **Subir foto del día**: publica la foto/actividad de cada día para las familias.
+   - **Crear comunicado**, **Crear evento**, **Votaciones**, **Asignar directiva**: igual, todo
+     desde ese panel, ya sin datos de ejemplo de por medio.
 
 ## 3. Cuando actualices el código
 
