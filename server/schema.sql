@@ -1,0 +1,178 @@
+-- Medio Menor - esquema MySQL/MariaDB
+-- Ejecutar completo en una base de datos vacía (ej: la que crees en hPanel de Hostinger).
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(190) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  name VARCHAR(190) NOT NULL,
+  role ENUM('apoderado', 'educadora') NOT NULL DEFAULT 'apoderado',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS children (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  course VARCHAR(190) NOT NULL DEFAULT 'Medio Menor',
+  garden VARCHAR(190) NOT NULL DEFAULT 'My Little World',
+  status VARCHAR(60) NOT NULL DEFAULT 'Excelente',
+  status_icon VARCHAR(10) NOT NULL DEFAULT '⭐',
+  snack VARCHAR(190),
+  nap VARCHAR(190),
+  sleep_rating VARCHAR(20),
+  teacher_comment TEXT,
+  activity_title VARCHAR(190),
+  activity_description TEXT,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS family_children (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  parent_user_id INT NOT NULL,
+  child_id INT NOT NULL,
+  FOREIGN KEY (parent_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (child_id) REFERENCES children(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_parent_child (parent_user_id, child_id)
+);
+
+CREATE TABLE IF NOT EXISTS child_status_log (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  child_id INT NOT NULL,
+  status VARCHAR(60) NOT NULL,
+  status_icon VARCHAR(10) NOT NULL,
+  note TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (child_id) REFERENCES children(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS directiva_roles (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  role ENUM('presidente', 'tesorera', 'secretario') NOT NULL UNIQUE,
+  assigned_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS announcements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  icon VARCHAR(10) NOT NULL DEFAULT '📢',
+  title VARCHAR(190) NOT NULL,
+  text TEXT NOT NULL,
+  important TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS announcement_reads (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  announcement_id INT NOT NULL,
+  user_id INT NOT NULL,
+  read_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_announcement_user (announcement_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  event_date DATE NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  description TEXT,
+  confirm TINYINT(1) NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS photos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  emoji VARCHAR(10) NOT NULL DEFAULT '📸',
+  title VARCHAR(190) NOT NULL,
+  description TEXT,
+  activity VARCHAR(190),
+  image_url VARCHAR(500),
+  likes INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS treasury_movements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('income', 'expense') NOT NULL,
+  title VARCHAR(190) NOT NULL,
+  detail VARCHAR(190),
+  amount DECIMAL(12, 2) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS treasury_fund (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(190) NOT NULL,
+  goal DECIMAL(12, 2) NOT NULL,
+  current DECIMAL(12, 2) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(190) NOT NULL,
+  status VARCHAR(60) NOT NULL DEFAULT 'Votación activa',
+  closes_label VARCHAR(190),
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS vote_options (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  vote_id INT NOT NULL,
+  icon VARCHAR(10) NOT NULL DEFAULT '🗳️',
+  label VARCHAR(190) NOT NULL,
+  FOREIGN KEY (vote_id) REFERENCES votes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS vote_records (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  vote_id INT NOT NULL,
+  option_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (vote_id) REFERENCES votes(id) ON DELETE CASCADE,
+  FOREIGN KEY (option_id) REFERENCES vote_options(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_vote_user (vote_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS marketplace_listings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  emoji VARCHAR(10) NOT NULL DEFAULT '🛒',
+  title VARCHAR(190) NOT NULL,
+  description VARCHAR(255),
+  price DECIMAL(12, 2),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS documents (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  icon VARCHAR(10) NOT NULL DEFAULT '📄',
+  title VARCHAR(190) NOT NULL,
+  subtitle VARCHAR(190),
+  file_url VARCHAR(500),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS community_posts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  icon VARCHAR(10) NOT NULL DEFAULT '📣',
+  title VARCHAR(190) NOT NULL,
+  text TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS community_post_likes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  post_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE KEY uniq_post_user (post_id, user_id)
+);
