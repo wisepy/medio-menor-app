@@ -66,6 +66,21 @@ export function AppProvider({ children }) {
     return profile;
   }
 
+  async function updateProfile({ name, email, currentPassword, newPassword }) {
+    const { token: newToken, user: profile } = await api.put("/api/auth/me", {
+      name,
+      email,
+      currentPassword,
+      newPassword: newPassword || undefined,
+    });
+
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+    setUser(profile);
+
+    return profile;
+  }
+
   function logout() {
     localStorage.removeItem("token");
     setToken(null);
@@ -152,6 +167,7 @@ export function AppProvider({ children }) {
         isLoggedIn,
         login,
         logout,
+        updateProfile,
 
         announcements,
         addAnnouncement,

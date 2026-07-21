@@ -78,3 +78,46 @@ authRouter.get("/me", auth, async (req, res) => {
 
   res.json(profile);
 });
+
+authRouter.put("/me", auth, async (req, res) => {
+  const { name, email, currentPassword, newPassword } = req.body;
+
+  if (!name || !email || !currentPassword) {
+    return res.status(400).json({
+      error: "Nombre, correo y contraseña actual son obligatorios.",
+    });
+  }
+
+  const [[user]] = await pool.query("SELECT * FROM users WHERE id = ?", [
+    req.user.id,
+  ]);
+
+  const valid = await bcrypt.compare(currentPassword, user.password_hash);
+
+  if (!valid) {
+    return res.status(401).json({ error: "La contraseña actual no es correcta." });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const passwordHash = newPassword
+    ? await bcrypt.hash(newPassword, 10)
+    : user.password_hash;
+
+  try {
+    await pool.query(
+      "UPDATE users SET name = ?, email = ?, password_hash = ? WHERE id = ?",
+      [name, normalizedEmail, passwordHash, req.user.id]
+    );
+  } catch (error) {
+    if (error.code === "ER_DUP_ENTRY") {
+      return res.status(409).json({ error: "Ese correo ya está en uso." });
+    }
+
+    throw error;
+  }
+
+  const profile = await loadProfile(req.user.id);
+  const token = signToken({ ...user, name, email: normalizedEmail });
+
+  res.json({ token, user: profile });
+});
