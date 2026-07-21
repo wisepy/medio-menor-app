@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch index.js",
+    "build": "echo 'no build step needed'",
     "start": "node index.js",
     "seed": "node seed.js",
     "bootstrap": "node bootstrap.js"
