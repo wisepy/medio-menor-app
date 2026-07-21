@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import { uploadsDir } from "./uploads.js";
+import { autoBootstrap } from "./autoBootstrap.js";
 
 import { authRouter } from "./routes/auth.js";
 import { announcementsRouter } from "./routes/announcements.js";
@@ -59,6 +60,9 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 4000;
+
+await autoBootstrap();
+
 app.listen(port, () => {
   console.log(`Medio Menor API escuchando en http://localhost:${port}`);
 });

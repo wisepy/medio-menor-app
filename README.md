@@ -36,11 +36,17 @@ npm run dev                  # http://localhost:5173
 
 ## Estructura del backend
 
-- `server/schema.sql` — DDL completo (ejecutar una sola vez, o dejar que `npm run seed`/`npm run bootstrap` lo haga).
-- `server/seed.js` — crea la base si no existe, aplica el esquema y carga datos de **demo** (útil solo para desarrollo/pruebas).
-- `server/bootstrap.js` — crea la base y el esquema, y una **única cuenta real de educadora**
-  (`EDUCADORA_NAME`/`EDUCADORA_EMAIL`/`EDUCADORA_PASSWORD` por variable de entorno), sin datos de
-  ejemplo. Es el que se usa para ir a producción — ver `DEPLOY.md`.
+- `server/schema.sql` — DDL completo.
+- `server/autoBootstrap.js` — corre automáticamente cada vez que arranca `server/index.js`: crea
+  la base/tablas si no existen, y si hay `EDUCADORA_NAME`/`EDUCADORA_EMAIL`/`EDUCADORA_PASSWORD`
+  en las variables de entorno y todavía no existe ninguna educadora, crea esa cuenta. Es lo que
+  hace que el despliegue en Hostinger funcione con solo `git push`, sin comandos manuales — ver
+  `DEPLOY.md`.
+- `server/seed.js` — crea la base y carga datos de **demo** (familias falsas incluidas), útil
+  solo para desarrollo/pruebas locales.
+- `server/bootstrap.js` — misma idea que `autoBootstrap.js` pero como script manual
+  (`node bootstrap.js`), por si alguna vez necesitas correrlo a mano en vez de por variables de
+  entorno al arrancar.
 - `server/routes/*.js` — un router por dominio (auth, announcements, events, photos, treasury,
   votes, marketplace, documents, community, families, children, directiva, notifications).
 - `server/uploads/` — archivos subidos (fotos, documentos), servidos en `/uploads/...`.

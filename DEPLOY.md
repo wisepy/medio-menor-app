@@ -1,29 +1,29 @@
-# Desplegar Medio Menor en Hostinger Cloud Professional
+# Desplegar Medio Menor en Hostinger (Web Apps con Git)
 
-Arquitectura elegida: **un solo dominio** (ej. `mediomenor.idweb.cl`) sirviendo todo — el backend
-Express corre como la única app Node.js, y esa misma app sirve también los archivos estáticos del
-frontend ya compilado (`dist/`). Sin CORS, sin subdominio aparte para la API.
+Arquitectura real usada en Hostinger: **dos "Web Apps" separadas**, ambas conectadas al mismo
+repo de GitHub (`https://github.com/wisepy/medio-menor-app.git`, rama `main`) con auto-deploy —
+cada `git push` a `main` las reconstruye solas, sin tocar SSH ni terminal.
 
-Sigue el orden: **base de datos → build del frontend → app Node.js**.
+- **Frontend** (`mediomenor.idweb.cl`): Root directory `./`, detecta Vite, sirve `dist/`.
+- **Backend** (`api.idweb.cl` u otro subdominio): Root directory `server`, detecta Node/Express,
+  corre `server/index.js` como proceso.
+
+El backend se auto-configura solo la primera vez que arranca (crea las tablas y tu cuenta de
+educadora) usando variables de entorno — no hace falta correr ningún comando manual.
 
 ## 1. Base de datos MySQL
 
-1. En hPanel, ve a **Bases de datos → Administrar MySQL** y crea una nueva base (ej.
-   `u123456789_medio_menor`), con su usuario y contraseña. Guarda esos tres datos.
-2. Abre **phpMyAdmin** para esa base y usa la pestaña **Importar** para subir
-   `server/schema.sql`. Esto crea todas las tablas.
-3. No hace falta correr `seed.js` en producción salvo que quieras los datos de demo.
+En hPanel: **Bases de datos → Administrar MySQL**, crea la base y su usuario (o usa la que ya
+tengas: `u362750072_mediomenor` / `u362750072_mediomenoruser`). No hace falta importar
+`schema.sql` a mano — el backend lo crea solo al arrancar.
 
-## 2. App Node.js (backend + frontend juntos)
+## 2. App del backend (Web App con Root directory = `server`)
 
-1. En hPanel, ve a **Avanzado → Node.js** y crea una nueva aplicación:
-   - Fuente: **Git** → repo `https://github.com/wisepy/medio-menor-app.git`, rama `main`.
-   - Directorio de la aplicación: **la raíz del repo** (no `server/`), porque el paso de build
-     necesita ver tanto el `package.json` del frontend como el de `server/`.
-   - Archivo de inicio (startup file): `server/index.js`.
-   - Dominio: `mediomenor.idweb.cl` (el único dominio de la app).
-   - Versión de Node: 18 o superior.
-2. Variables de entorno de esa app:
+1. Crea el subdominio para la API (ej. `api.idweb.cl`) en **Dominios → Subdominios**.
+2. En **Websites → Crear Web App**, conecta el mismo repo de GitHub, rama `main`, y en
+   **Root directory pon `server`** (no `./`). Debería detectarlo como app Node.js/Express, no
+   como sitio estático.
+3. En **Environment variables** de esta app, agrega:
    ```
    DB_HOST=localhost
    DB_PORT=3306
@@ -31,63 +31,59 @@ Sigue el orden: **base de datos → build del frontend → app Node.js**.
    DB_PASSWORD=Mediomenor2026
    DB_NAME=u362750072_mediomenor
    JWT_SECRET=a254e209a3d62923e7c1ccf558e244f2e2dc4fad1f68f04163f1f07116c00c29e690f65bc65050dfe3c39f2c353fc2fd
+   CORS_ORIGIN=https://mediomenor.idweb.cl
+   EDUCADORA_NAME=Juan Aceituno
+   EDUCADORA_EMAIL=jaceituno89@gmail.com
+   EDUCADORA_PASSWORD=xyc8F55fdWCGfy
    ```
-   (`CORS_ORIGIN` y `VITE_API_URL` ya no hacen falta: todo vive en el mismo dominio.)
-3. Antes del primer arranque, entra por SSH/terminal de hPanel y corre, **en este orden**:
-   ```bash
-   # 1. instala y compila el frontend (en la raíz del repo)
-   npm install
-   npm run build
+   Las tres variables `EDUCADORA_*` solo importan la **primera vez** que arranca: si no existe
+   todavía ninguna cuenta de educadora, el backend crea una con esos datos. En arranques
+   posteriores no hace nada (no duplica ni resetea la cuenta).
+4. Despliega/reinicia. Verifica `https://api.idweb.cl/api/health` → `{"ok":true}`.
 
-   # 2. instala las dependencias del backend
-   cd server
-   npm install
+## 3. App del frontend (la que ya tienes en `mediomenor.idweb.cl`)
 
-   # 3. crea las tablas + tu cuenta real de educadora (sin datos de demo)
-   EDUCADORA_NAME="Tu Nombre" EDUCADORA_EMAIL="tucorreo@tudominio.cl" EDUCADORA_PASSWORD="unaClaveSegura123" node bootstrap.js
+1. En **Environment variables** de esa app, agrega o edita:
    ```
-   `bootstrap.js` crea las tablas si no existen y **una sola** cuenta de educadora real con los
-   datos que le pases — no inserta familias, comunicados ni fotos de ejemplo. Si vuelves a
-   correrlo, detecta que ya existe una educadora y no hace nada (seguro re-ejecutarlo).
+   VITE_API_URL=https://api.idweb.cl
+   ```
+2. **Redeploy** desde la pestaña Deployments (el valor se hornea en el build, necesita
+   reconstruir para tomarlo).
 
-   Si en cambio quieres partir viendo la app con datos de ejemplo (útil solo para probar), usa
-   `node seed.js` en vez del paso anterior — crea la educadora demo y 3 familias falsas.
-4. Inicia/reinicia la app Node.js desde hPanel (startup file `server/index.js`). Verifica:
-   - `https://mediomenor.idweb.cl/api/health` → `{"ok":true}`
-   - `https://mediomenor.idweb.cl/` → carga la app (React), no un JSON.
-5. Inicia sesión con la cuenta de educadora que acabas de crear. Desde **Más → Panel Educadora**:
-   - **Familias → Agregar familia**: crea una cuenta real por cada apoderado (nombre, correo,
-     contraseña inicial, nombre del niño/a). Cada apoderado inicia sesión con esos datos.
-   - **Subir foto del día**: publica la foto/actividad de cada día para las familias.
-   - **Crear comunicado**, **Crear evento**, **Votaciones**, **Asignar directiva**: igual, todo
-     desde ese panel, ya sin datos de ejemplo de por medio.
+## 4. Ya funcional
 
-## 3. Cuando actualices el código
+Entra a `https://mediomenor.idweb.cl`, inicia sesión con la cuenta de educadora del paso 2, y
+desde **Más → Panel Educadora**:
+- **Familias → Agregar familia**: crea una cuenta real por cada apoderado (nombre, correo,
+  contraseña inicial, nombre del niño/a).
+- **Subir foto del día**, **Crear comunicado**, **Crear evento**, **Votaciones**, **Asignar
+  directiva**: todo desde ahí, sin datos de ejemplo de por medio.
 
-Cada vez que hagas `git push` a `main`, en el servidor necesitas repetir el build del frontend
-(`npm run build` en la raíz) antes de reiniciar la app Node.js — Hostinger hace `git pull` pero no
-corre el build automáticamente. Si tu plan permite un "deploy script"/hook en hPanel, agrega ahí
-los mismos comandos del paso 2.3.
+## Actualizar el código
 
-## 4. Verificación final
+Solo `git push` a `main`. Ambas Web Apps (frontend y backend) se reconstruyen y reinician solas.
 
-- Inicia sesión con una cuenta real (o la de demo si sembraste datos) y confirma que las páginas
-  cargan datos desde el backend (Network tab → llamadas a `/api/...` con status 200, mismo origen).
-- Prueba subir una foto o documento y confirma que el archivo queda accesible en
-  `https://mediomenor.idweb.cl/uploads/...`.
-- Confirma que `manifest.webmanifest` carga los íconos (`/icons/icon-192.png`,
+## Verificación
+
+- Login real funciona y las páginas cargan datos desde `/api/...` (ver pestaña Network,
+  llamadas a `https://api.idweb.cl/api/...` con status 200).
+- Subir una foto o documento y confirmar que el archivo queda accesible en
+  `https://api.idweb.cl/uploads/...`.
+- `manifest.webmanifest` del frontend carga los íconos (`/icons/icon-192.png`,
   `/icons/icon-512.png`) sin error 404.
 
 ## Notas
 
-- Cambia las contraseñas de demo (`educa1234` / `demo1234`) antes de dar acceso real a
-  apoderados y educadoras.
-- Considera mover `server/uploads/` a un volumen persistente si tu plan de Hostinger reinicia el
-  sistema de archivos de la app Node.js entre despliegues.
+- Si tu plan de Hostinger reinicia el sistema de archivos del backend entre despliegues,
+  `server/uploads/` (fotos y documentos subidos) se perdería — considera moverlo a un volumen
+  persistente si eso te pasa.
+- `server/seed.js` (datos de demo con familias falsas) y `server/bootstrap.js` (variante manual
+  del auto-bootstrap) siguen disponibles para desarrollo local, pero no se usan en este flujo de
+  despliegue.
 
-## Alternativa: dos dominios separados
+## Alternativa: un solo dominio
 
-Si en el futuro prefieres separar frontend y backend (ej. para escalarlos o cachearlos distinto),
-se puede volver a esa arquitectura: subdominio propio para la API (`api.idweb.cl`), `CORS_ORIGIN`
-apuntando al dominio del frontend, y `VITE_API_URL` en el build del frontend apuntando a ese
-subdominio. El código ya soporta ambos modos sin cambios adicionales.
+Si más adelante tu plan de Hostinger permite un "Node.js App" clásico (proceso persistente con
+acceso SSH, no solo Web App con Git), se puede volver a servir todo desde un solo dominio: el
+mismo backend Express puede servir también el frontend compilado (`dist/`) si lo encuentra junto
+a `server/` — el código ya lo soporta, solo cambiaría dónde y cómo se despliega.
