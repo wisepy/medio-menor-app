@@ -22,7 +22,10 @@ import { directivaRouter } from "./routes/directiva.js";
 import { notificationsRouter } from "./routes/notifications.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const clientDist = path.join(__dirname, "..", "dist");
+
+const localDist = path.join(__dirname, "dist");
+const parentDist = path.join(__dirname, "..", "dist");
+const clientDist = fs.existsSync(localDist) ? localDist : parentDist;
 
 const app = express();
 
