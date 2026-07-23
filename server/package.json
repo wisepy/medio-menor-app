@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch index.js",
     "build": "echo 'no build step needed'",
+    "postinstall": "npm --prefix .. install && npm --prefix .. run build",
     "start": "node index.js",
     "seed": "node seed.js",
     "bootstrap": "node bootstrap.js"
