@@ -3,9 +3,14 @@
 App para el curso "Medio Menor" de My Little World: comunicados, agenda, fotos, tesorería,
 votaciones, marketplace, documentos y gestión de familias/directiva.
 
-- **Frontend**: React 19 + Vite + React Router, PWA instalable (`vite-plugin-pwa`).
+- **Frontend**: React 19 + Vite + React Router, PWA instalable (`vite-plugin-pwa`) — vive en
+  `server/client/`.
 - **Backend**: Node.js + Express (`server/`), autenticación JWT.
 - **Base de datos**: MySQL/MariaDB.
+
+El frontend vive **dentro** de `server/client/` (no en la raíz del repo) a propósito: el
+despliegue en Hostinger solo tiene acceso a la carpeta `server/`, así que el frontend tiene que
+ser una subcarpeta de esa, no un directorio hermano — ver `DEPLOY.md`.
 
 ## Desarrollo local
 
@@ -29,6 +34,7 @@ El seed crea dos cuentas de prueba:
 ### 2. Frontend
 
 ```bash
+cd server/client
 npm install
 cp .env.example .env       # VITE_API_URL apuntando al backend (http://localhost:4000 por defecto)
 npm run dev                  # http://localhost:5173
@@ -50,8 +56,10 @@ npm run dev                  # http://localhost:5173
 - `server/routes/*.js` — un router por dominio (auth, announcements, events, photos, treasury,
   votes, marketplace, documents, community, families, children, directiva, notifications).
 - `server/uploads/` — archivos subidos (fotos, documentos), servidos en `/uploads/...`.
+- `server/client/` — el proyecto Vite del frontend completo (su propio `package.json`).
+- `server/package.json` → `postinstall` instala y compila `server/client/`, y copia el resultado
+  a `server/dist/`, que `server/index.js` sirve automáticamente si existe.
 
-## Despliegue en Hostinger (Cloud Professional)
+## Despliegue en Hostinger
 
-Ver [`DEPLOY.md`](DEPLOY.md) para el checklist paso a paso: creación de la base MySQL en hPanel,
-importación del esquema, configuración de la app Node.js del backend y publicación del frontend.
+Ver [`DEPLOY.md`](DEPLOY.md) para el checklist paso a paso.
