@@ -61,8 +61,10 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 4000;
 
-await autoBootstrap();
-
 app.listen(port, () => {
   console.log(`Medio Menor API escuchando en http://localhost:${port}`);
+});
+
+autoBootstrap().catch((error) => {
+  console.error("Error en el auto-bootstrap de la base de datos:", error);
 });
